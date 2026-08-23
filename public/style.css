@@ -198,10 +198,12 @@ a {
   text-align: center;
   cursor: pointer;
   background: #f9fbff;
+  transition: border-color 0.2s, background 0.2s;
 }
 
 .upload-box:hover {
   border-color: #2457d6;
+  background: #f4f7ff;
 }
 
 .upload-title {
@@ -225,6 +227,166 @@ a {
   margin-top: 18px;
   color: #526078;
 }
+
+
+/* =========================
+   DOCUMENT LIST
+   ========================= */
+
+.document-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 28px;
+}
+
+
+/* Individual document card */
+
+.document-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+
+  background: #f9fbff;
+  border: 1px solid #e2e7f0;
+  border-radius: 14px;
+
+  padding: 18px 20px;
+
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s,
+    transform 0.2s;
+}
+
+.document-card:hover {
+  border-color: #c9d5e8;
+  box-shadow: 0 6px 18px rgba(25, 48, 90, 0.06);
+}
+
+
+/* Left side of card */
+
+.document-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+
+/* PDF icon */
+
+.document-icon {
+  width: 46px;
+  height: 46px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  border-radius: 10px;
+
+  background: #eaf0ff;
+  color: #2457d6;
+
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+
+/* Filename */
+
+.document-info h3 {
+  font-size: 0.98rem;
+  font-weight: 700;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  max-width: 480px;
+}
+
+
+/* File metadata */
+
+.document-info p {
+  color: #7a879c;
+  font-size: 0.82rem;
+  margin-top: 3px;
+}
+
+
+/* Status */
+
+.document-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
+  flex-shrink: 0;
+
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #526078;
+}
+
+
+/* Status dot */
+
+.document-status::before {
+  content: "";
+
+  width: 8px;
+  height: 8px;
+
+  border-radius: 50%;
+
+  background: #f0a72e;
+}
+
+
+/* Uploaded status */
+
+.document-status.uploaded {
+  color: #237a50;
+}
+
+.document-status.uploaded::before {
+  background: #2eaa6b;
+}
+
+
+/* Processing status */
+
+.document-status.processing {
+  color: #8a641c;
+}
+
+.document-status.processing::before {
+  background: #f0a72e;
+}
+
+
+/* Error status */
+
+.document-status.error {
+  color: #b23a3a;
+}
+
+.document-status.error::before {
+  background: #d95353;
+}
+
+
+/* =========================
+   ANALYSIS RESULTS
+   ========================= */
 
 .results {
   margin-top: 38px;
@@ -269,7 +431,13 @@ a {
   border-top: 1px solid #e5e8ee;
 }
 
+
+/* =========================
+   MOBILE
+   ========================= */
+
 @media (max-width: 800px) {
+
   .site-header {
     flex-direction: column;
     gap: 16px;
@@ -300,4 +468,21 @@ a {
   .upload-card {
     padding: 28px 20px;
   }
+
+
+  /* Stack document card on small screens */
+
+  .document-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .document-status {
+    margin-left: 60px;
+  }
+
+  .document-info h3 {
+    max-width: 240px;
+  }
+
 }
