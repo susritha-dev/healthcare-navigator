@@ -127,22 +127,40 @@ function cleanProviderName(value) {
 }
 
 function extractProvider(text) {
-  const knownProviders = [
-    /Kaiser Permanente/i,
-    /UnitedHealthcare/i,
-    /Blue Cross(?: Blue Shield)?/i,
-    /Aetna/i,
-    /Cigna/i,
-    /Humana/i,
-    /Anthem/i
-  ];
+  const lower = text.toLowerCase();
 
-  for (const pattern of knownProviders) {
-    const match = text.match(pattern);
+  if (
+    lower.includes("kaiser") &&
+    lower.includes("permanente")
+  ) {
+    return "Kaiser Permanente";
+  }
 
-    if (match) {
-      return cleanProviderName(match[0]);
-    }
+  if (lower.includes("unitedhealthcare")) {
+    return "UnitedHealthcare";
+  }
+
+  if (
+    lower.includes("blue cross") &&
+    lower.includes("blue shield")
+  ) {
+    return "Blue Cross Blue Shield";
+  }
+
+  if (lower.includes("aetna")) {
+    return "Aetna";
+  }
+
+  if (lower.includes("cigna")) {
+    return "Cigna";
+  }
+
+  if (lower.includes("humana")) {
+    return "Humana";
+  }
+
+  if (lower.includes("anthem")) {
+    return "Anthem";
   }
 
   const lines = text
@@ -153,12 +171,14 @@ function extractProvider(text) {
   const providerWords =
     /(hospital|medical center|clinic|health system|health plan|healthcare|medical group|laboratory|physicians)/i;
 
-  for (const line of lines.slice(0, 20)) {
+  for (const line of lines.slice(0, 25)) {
     if (
       providerWords.test(line) &&
       line.length >= 4 &&
       line.length <= 70 &&
-      !/write to us|questions|phone|address|language|customer service/i.test(line)
+      !/write to us|questions|phone|address|language|customer service|important notices/i.test(
+        line
+      )
     ) {
       return cleanProviderName(line);
     }
