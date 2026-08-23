@@ -226,10 +226,10 @@ function extractDate(text) {
     }
   }
 
-  const longDatePattern =
-    /\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+20\d{2}\b/gi;
-
-  const longDates = text.match(longDatePattern) || [];
+  const longDates =
+    text.match(
+      /\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+20\d{2}\b/gi
+    ) || [];
 
   for (const date of longDates) {
     if (isReasonableDate(date)) {
@@ -237,10 +237,10 @@ function extractDate(text) {
     }
   }
 
-  const shortMonthPattern =
-    /\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\.?\s+\d{1,2},?\s+20\d{2}\b/gi;
-
-  const shortMonthDates = text.match(shortMonthPattern) || [];
+  const shortMonthDates =
+    text.match(
+      /\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\.?\s+\d{1,2},?\s+20\d{2}\b/gi
+    ) || [];
 
   for (const date of shortMonthDates) {
     if (isReasonableDate(date)) {
@@ -281,7 +281,7 @@ function cleanService(value) {
     .trim();
 
   const badContent =
-    /address|avenue|street|road|boulevard|suite|phone|fax|language|questions|customer service|write to us|zip code|member services|website|www\.|http|payment address/i;
+    /address|avenue|street|road|boulevard|suite|phone|fax|language|questions|customer service|write to us|zip code|member services|website|www\.|http|payment|received|mail|check|account/i;
 
   if (badContent.test(cleaned)) {
     return null;
@@ -296,13 +296,13 @@ function cleanService(value) {
 
 function extractService(text) {
   const labeledPatterns = [
-    /(?:Service Description|Description of Service|Procedure Description|Description)\s*[:#]?\s*([^\n$]{4,90})/i,
+    /(?:Service Description|Description of Service|Procedure Description)\s*[:#]?\s*([^\n$]{4,90})/i,
 
     /(?:Reason for Visit|Visit Reason)\s*[:#]?\s*([^\n$]{4,90})/i,
 
     /(?:Procedure Name|Procedure)\s*[:#]?\s*([^\n$]{4,90})/i,
 
-    /(?:Service|Services Rendered|Type of Service)\s*[:#]?\s*([^\n$]{4,90})/i,
+    /(?:Services Rendered|Type of Service)\s*[:#]?\s*([^\n$]{4,90})/i,
 
     /(?:CPT|HCPCS|Procedure Code)\s*[:#]?\s*[A-Z0-9\-]+\s*(?:[-–—:]\s*)?([A-Za-z][^\n$]{3,90})/i
   ];
@@ -312,29 +312,6 @@ function extractService(text) {
 
     if (match) {
       const cleaned = cleanService(match[1]);
-
-      if (cleaned) {
-        return cleaned;
-      }
-    }
-  }
-
-  const lines = text
-    .split("\n")
-    .map(line => line.trim())
-    .filter(Boolean);
-
-  const likelyServiceWords =
-    /(office visit|emergency|emergency room|laboratory|lab test|x-ray|radiology|imaging|consultation|therapy|surgery|procedure|vaccination|injection|exam|diagnostic|blood test|ambulance)/i;
-
-  for (const line of lines) {
-    if (
-      likelyServiceWords.test(line) &&
-      !/address|phone|questions|customer service|language|payment|mail|website/i.test(
-        line
-      )
-    ) {
-      const cleaned = cleanService(line);
 
       if (cleaned) {
         return cleaned;
