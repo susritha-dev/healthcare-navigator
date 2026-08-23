@@ -272,33 +272,77 @@ function extractAmount(text, labels) {
   return null;
 }
 
-function extractService(text) {
-  const labeledPatterns = [
-    /(?:Service Description|Description of Service|Procedure Description)\s*[:#]?\s*([^\n$]{4,80})/i,
+function cleanService(value) {
+  if (!value) return null;
 
-    /(?:Reason for Visit)\s*[:#]?\s*([^\n$]{4,80})/i,
-
-    /(?:Procedure)\s*[:#]?\s*([^\n$]{4,80})/i
-  ];
-
-  const service = findFirst(text, labeledPatterns);
-
-  if (!service) {
-    return null;
-  }
-
-  const cleaned = service
+  const cleaned = value
     .replace(/\s{2,}/g, " ")
+    .replace(/[,:;.\-]+$/, "")
     .trim();
 
   const badContent =
-    /address|avenue|street|road|phone|language|questions|customer service|write to us|zip code/i;
+    /address|avenue|street|road|boulevard|suite|phone|fax|language|questions|customer service|write to us|zip code|member services|website|www\.|http|payment address/i;
 
   if (badContent.test(cleaned)) {
     return null;
   }
 
-  return cleaned.length <= 80 ? cleaned : null;
+  if (cleaned.length < 4 || cleaned.length > 90) {
+    return null;
+  }
+
+  return cleaned;
+}
+
+function extractService(text) {
+  const labeledPatterns = [
+    /(?:Service Description|Description of Service|Procedure Description|Description)\s*[:#]?\s*([^\n$]{4,90})/i,
+
+    /(?:Reason for Visit|Visit Reason)\s*[:#]?\s*([^\n$]{4,90})/i,
+
+    /(?:Procedure Name|Procedure)\s*[:#]?\s*([^\n$]{4,90})/i,
+
+    /(?:Service|Services Rendered|Type of Service)\s*[:#]?\s*([^\n$]{4,90})/i,
+
+    /(?:CPT|HCPCS|Procedure Code)\s*[:#]?\s*[A-Z0-9\-]+\s*(?:[-–—:]\s*)?([A-Za-z][^\n$]{3,90})/i
+  ];
+
+  for (const pattern of labeledPatterns) {
+    const match = text.match(pattern);
+
+    if (match) {
+      const cleaned = cleanService(match[1]);
+
+      if (cleaned) {
+        return cleaned;
+      }
+    }
+  }
+
+  const lines = text
+    .split("\n")
+    .map(line => line.trim())
+    .filter(Boolean);
+
+  const likelyServiceWords =
+    /(office visit|emergency|emergency room|laboratory|lab test|x-ray|radiology|imaging|consultation|therapy|surgery|procedure|vaccination|injection|exam|diagnostic|blood test|ambulance)/i;
+
+  for (const line of lines) {
+    if (
+      likelyServiceWords.test(line) &&
+      !/address|phone|questions|customer service|language|payment|mail|website/i.test(
+        line
+      )
+    ) {
+      const cleaned = cleanService(line);
+
+      if (cleaned) {
+        return cleaned;
+      }
+    }
+  }
+
+  return null;
 }
 
 function buildSummary(data) {
@@ -322,13 +366,22 @@ function buildSummary(data) {
     parts.push(`The main date found is ${data.date}.`);
   }
 
+  if (data.service) {
+    parts.push(`The main service appears to be ${data.service}.`);
+  }
+
   if (data.patientResponsibility) {
     parts.push(
       `The document appears to list ${data.patientResponsibility} as the patient's responsibility.`
     );
   }
 
-  if (!data.provider && !data.date && !data.patientResponsibility) {
+  if (
+    !data.provider &&
+    !data.date &&
+    !data.service &&
+    !data.patientResponsibility
+  ) {
     parts.push(
       "Some important details could not be identified confidently from the document text."
     );
