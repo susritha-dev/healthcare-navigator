@@ -33,7 +33,7 @@ let documents = [];
 */
 
 documentInput.addEventListener("change", () => {
-
+  console.log("FILES SELECTED:", documentInput.files.length);
   const selectedFiles = Array.from(documentInput.files);
 
   if (selectedFiles.length === 0) {
