@@ -40,14 +40,19 @@ documentInput.addEventListener("change", () => {
     return;
   }
 
+  let addedCount = 0;
 
   selectedFiles.forEach((file) => {
 
-    // Only allow PDFs
-    if (file.type !== "application/pdf") {
+    // Check the filename extension instead of relying
+    // only on the browser's MIME type.
+    const isPDF =
+      file.type === "application/pdf" ||
+      file.name.toLowerCase().endsWith(".pdf");
+
+    if (!isPDF) {
       return;
     }
-
 
     const document = {
       id: crypto.randomUUID(),
@@ -55,17 +60,26 @@ documentInput.addEventListener("change", () => {
       status: "Ready"
     };
 
-
     documents.push(document);
 
+    addedCount++;
   });
 
 
   renderDocuments();
 
 
-  statusMessage.textContent =
-    `${selectedFiles.length} document${selectedFiles.length === 1 ? "" : "s"} selected.`;
+  if (addedCount === 0) {
+
+    statusMessage.textContent =
+      "No valid PDF documents were selected.";
+
+  } else {
+
+    statusMessage.textContent =
+      `${addedCount} document${addedCount === 1 ? "" : "s"} selected.`;
+
+  }
 
 
   // Allow the user to select the same file again later
