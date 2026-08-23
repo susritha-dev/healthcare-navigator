@@ -1,7 +1,8 @@
 function normalizeText(text) {
   return text
-    .replace(/\s+/g, " ")
-    .replace(/[^\x20-\x7E]/g, " ")
+    .replace(/[^\x20-\x7E\n]/g, " ")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{2,}/g, "\n")
     .trim();
 }
 
@@ -23,7 +24,9 @@ function classifyDocument(text) {
       "patient responsibility",
       "total charges",
       "you owe",
-      "statement balance"
+      "statement balance",
+      "payment due",
+      "patient balance"
     ],
 
     EOB: [
@@ -32,12 +35,14 @@ function classifyDocument(text) {
       "plan paid",
       "insurance paid",
       "member responsibility",
-      "claim number"
+      "claim number",
+      "claim status"
     ],
 
     LAB_RESULT: [
       "reference range",
       "lab result",
+      "laboratory",
       "specimen",
       "hemoglobin",
       "glucose",
@@ -51,7 +56,8 @@ function classifyDocument(text) {
       "reason for visit",
       "clinical summary",
       "office visit",
-      "assessment"
+      "assessment",
+      "visit diagnosis"
     ],
 
     DISCHARGE_SUMMARY: [
@@ -59,7 +65,8 @@ function classifyDocument(text) {
       "discharge summary",
       "follow up",
       "return precautions",
-      "discharged"
+      "discharged",
+      "after visit instructions"
     ]
   };
 
@@ -108,42 +115,93 @@ function findFirst(text, patterns) {
   return null;
 }
 
+function cleanProviderName(value) {
+  if (!value) return null;
+
+  return value
+    .replace(/^write to us at\s+/i, "")
+    .replace(/^contact\s+/i, "")
+    .replace(/\s{2,}/g, " ")
+    .replace(/[,:;.\-]+$/, "")
+    .trim();
+}
+
 function extractProvider(text) {
-  const patterns = [
-    /([A-Z][A-Za-z&.'\-\s]{2,60}(?:Hospital|Medical Center|Clinic|Health System|Health Plan|Healthcare|Laboratory))/i,
-    /(Kaiser Permanente)/i,
-    /(Blue Cross[^,\n]*)/i,
-    /(UnitedHealthcare[^,\n]*)/i,
-    /(Aetna[^,\n]*)/i,
-    /(Cigna[^,\n]*)/i
+  const knownProviders = [
+    /Kaiser Permanente/i,
+    /UnitedHealthcare/i,
+    /Blue Cross(?: Blue Shield)?/i,
+    /Aetna/i,
+    /Cigna/i,
+    /Humana/i,
+    /Anthem/i
   ];
 
-  return findFirst(text, patterns);
+  for (const pattern of knownProviders) {
+    const match = text.match(pattern);
+
+    if (match) {
+      return cleanProviderName(match[0]);
+    }
+  }
+
+  const lines = text
+    .split("\n")
+    .map(line => line.trim())
+    .filter(Boolean);
+
+  const providerWords =
+    /(hospital|medical center|clinic|health system|health plan|healthcare|medical group|laboratory|physicians)/i;
+
+  for (const line of lines.slice(0, 20)) {
+    if (
+      providerWords.test(line) &&
+      line.length >= 4 &&
+      line.length <= 70 &&
+      !/write to us|questions|phone|address|language|customer service/i.test(line)
+    ) {
+      return cleanProviderName(line);
+    }
+  }
+
+  return null;
 }
 
 function extractDate(text) {
-  const patterns = [
-    /(?:Date of Service|Service Date|Visit Date|Statement Date|DOS|Date)\s*[:#]?\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i,
+  const labeledPatterns = [
+    /(?:Date of Service|Service Date|Visit Date|Statement Date|DOS)\s*[:#]?\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i,
 
-    /(?:Date of Service|Service Date|Visit Date|Statement Date|Date)\s*[:#]?\s*((?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4})/i,
-
-    /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})/
+    /(?:Date of Service|Service Date|Visit Date|Statement Date)\s*[:#]?\s*((?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4})/i
   ];
 
-  return findFirst(text, patterns);
+  const labeledDate = findFirst(text, labeledPatterns);
+
+  if (labeledDate) {
+    return labeledDate;
+  }
+
+  const genericDate = text.match(
+    /\b(0?[1-9]|1[0-2])[\/\-](0?[1-9]|[12]\d|3[01])[\/\-](20\d{2})\b/
+  );
+
+  return genericDate ? genericDate[0] : null;
 }
 
 function extractAmount(text, labels) {
   for (const label of labels) {
     const pattern = new RegExp(
-      `${label}\\s*[:#]?\\s*\\$?\\s*([\\d,]+\\.\\d{2})`,
+      `${label}\\s*[:#]?\\s*\\$?\\s*([\\d,]+(?:\\.\\d{2})?)`,
       "i"
     );
 
     const match = text.match(pattern);
 
     if (match) {
-      return `$${match[1]}`;
+      const amount = match[1];
+
+      return amount.includes(".")
+        ? `$${amount}`
+        : `$${amount}.00`;
     }
   }
 
@@ -151,35 +209,64 @@ function extractAmount(text, labels) {
 }
 
 function extractService(text) {
-  const patterns = [
-    /(?:Service Description|Description of Service|Procedure Description|Reason for Visit)\s*[:#]?\s*([^$\n]{4,100})/i,
+  const labeledPatterns = [
+    /(?:Service Description|Description of Service|Procedure Description)\s*[:#]?\s*([^\n$]{4,80})/i,
 
-    /(?:Service|Procedure)\s*[:#]?\s*([^$\n]{4,100})/i
+    /(?:Reason for Visit)\s*[:#]?\s*([^\n$]{4,80})/i,
+
+    /(?:Procedure)\s*[:#]?\s*([^\n$]{4,80})/i
   ];
 
-  return findFirst(text, patterns);
+  const service = findFirst(text, labeledPatterns);
+
+  if (!service) {
+    return null;
+  }
+
+  const cleaned = service
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
+  const badContent =
+    /address|avenue|street|road|phone|language|questions|customer service|write to us|zip code/i;
+
+  if (badContent.test(cleaned)) {
+    return null;
+  }
+
+  return cleaned.length <= 80 ? cleaned : null;
 }
 
 function buildSummary(data) {
   const parts = [];
 
-  if (data.provider) {
-    parts.push(`This document appears to be from ${data.provider}.`);
+  if (data.documentType !== "UNKNOWN") {
+    const label = data.documentType
+      .replaceAll("_", " ")
+      .toLowerCase();
+
+    parts.push(`This appears to be a ${label}.`);
   } else {
     parts.push("This appears to be a healthcare document.");
   }
 
-  if (data.documentType !== "UNKNOWN") {
-    parts.push(
-      `The system classified it as a ${data.documentType
-        .replaceAll("_", " ")
-        .toLowerCase()}.`
-    );
+  if (data.provider) {
+    parts.push(`The document appears to be from ${data.provider}.`);
+  }
+
+  if (data.date) {
+    parts.push(`The main date found is ${data.date}.`);
   }
 
   if (data.patientResponsibility) {
     parts.push(
       `The document appears to list ${data.patientResponsibility} as the patient's responsibility.`
+    );
+  }
+
+  if (!data.provider && !data.date && !data.patientResponsibility) {
+    parts.push(
+      "Some important details could not be identified confidently from the document text."
     );
   }
 
@@ -192,16 +279,15 @@ function analyzeDocument(text) {
   const classification = classifyDocument(cleanedText);
 
   const provider = extractProvider(cleanedText);
-
   const date = extractDate(cleanedText);
-
   const service = extractService(cleanedText);
 
   const billedAmount = extractAmount(cleanedText, [
     "Total Charges",
     "Billed Amount",
     "Amount Billed",
-    "Total Billed"
+    "Total Billed",
+    "Original Charges"
   ]);
 
   const insurancePayment = extractAmount(cleanedText, [
@@ -223,7 +309,8 @@ function analyzeDocument(text) {
     "Amount Due",
     "Balance Due",
     "You Owe",
-    "Member Responsibility"
+    "Member Responsibility",
+    "Patient Balance"
   ]);
 
   const data = {
