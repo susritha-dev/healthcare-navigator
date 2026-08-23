@@ -187,24 +187,68 @@ function extractProvider(text) {
   return null;
 }
 
+function isReasonableDate(dateString) {
+  const date = new Date(dateString);
+
+  if (Number.isNaN(date.getTime())) {
+    return false;
+  }
+
+  const year = date.getFullYear();
+
+  return year >= 2000 && year <= 2100;
+}
+
 function extractDate(text) {
   const labeledPatterns = [
-    /(?:Date of Service|Service Date|Visit Date|Statement Date|DOS)\s*[:#]?\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i,
+    /(?:Date of Service|Service Date|Visit Date|Statement Date|Billing Date|DOS)\s*[:#]?\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i,
 
-    /(?:Date of Service|Service Date|Visit Date|Statement Date)\s*[:#]?\s*((?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4})/i
+    /(?:Date of Service|Service Date|Visit Date|Statement Date|Billing Date)\s*[:#]?\s*((?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4})/i,
+
+    /(?:Date of Service|Service Date|Visit Date|Statement Date|Billing Date)\s*[:#]?\s*((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\.?\s+\d{1,2},?\s+\d{4})/i
   ];
 
   const labeledDate = findFirst(text, labeledPatterns);
 
-  if (labeledDate) {
+  if (labeledDate && isReasonableDate(labeledDate)) {
     return labeledDate;
   }
 
-  const genericDate = text.match(
-    /\b(0?[1-9]|1[0-2])[\/\-](0?[1-9]|[12]\d|3[01])[\/\-](20\d{2})\b/
-  );
+  const numericDates = [
+    ...text.matchAll(
+      /\b(0?[1-9]|1[0-2])[\/\-](0?[1-9]|[12]\d|3[01])[\/\-](20\d{2})\b/g
+    )
+  ];
 
-  return genericDate ? genericDate[0] : null;
+  for (const match of numericDates) {
+    if (isReasonableDate(match[0])) {
+      return match[0];
+    }
+  }
+
+  const longDatePattern =
+    /\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+20\d{2}\b/gi;
+
+  const longDates = text.match(longDatePattern) || [];
+
+  for (const date of longDates) {
+    if (isReasonableDate(date)) {
+      return date;
+    }
+  }
+
+  const shortMonthPattern =
+    /\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\.?\s+\d{1,2},?\s+20\d{2}\b/gi;
+
+  const shortMonthDates = text.match(shortMonthPattern) || [];
+
+  for (const date of shortMonthDates) {
+    if (isReasonableDate(date)) {
+      return date;
+    }
+  }
+
+  return null;
 }
 
 function extractAmount(text, labels) {
