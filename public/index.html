@@ -43,7 +43,7 @@
         </p>
 
         <a href="#upload" class="primary-button">
-          Analyze a Document
+          Analyze Documents
         </a>
 
       </div>
@@ -74,8 +74,8 @@
           <h3>Upload</h3>
 
           <p>
-            Upload a healthcare document such as a bill,
-            EOB, lab result, or visit summary.
+            Upload healthcare documents such as bills,
+            EOBs, lab results, or visit summaries.
           </p>
         </div>
 
@@ -169,6 +169,10 @@
     </section>
 
 
+    <!-- =========================
+         DOCUMENT UPLOAD
+         ========================= -->
+
     <section id="upload" class="section upload-section">
 
       <div class="upload-card">
@@ -178,12 +182,12 @@
         </p>
 
         <h2>
-          Upload a healthcare document.
+          Upload your healthcare documents.
         </h2>
 
         <p class="upload-description">
-          For the first version, we will support text-based PDF documents.
-          Photo and scanned-document support will be added later.
+          Upload multiple text-based PDF documents such as medical bills,
+          insurance EOBs, lab results, or visit summaries.
         </p>
 
 
@@ -192,31 +196,77 @@
           <label for="documentInput" class="upload-box">
 
             <span class="upload-title">
-              Choose a PDF
+              Choose PDFs
             </span>
 
             <span class="upload-subtitle">
-              Select a healthcare document from your device.
+              You can select multiple healthcare documents from your device.
             </span>
 
             <input
               type="file"
               id="documentInput"
               accept=".pdf,application/pdf"
+              multiple
             />
 
           </label>
 
 
           <button type="submit" class="primary-button">
-            Analyze Document
+            Analyze Documents
           </button>
 
         </form>
 
 
+        <!-- General upload status -->
         <div id="statusMessage" class="status-message"></div>
 
+
+        <!-- =========================
+             DOCUMENT LIST
+             ========================= -->
+
+        <div id="documentList" class="document-list">
+
+          <!--
+            Document cards will be inserted here
+            by app.js.
+
+            Example:
+
+            <div class="document-card">
+
+              <div class="document-info">
+
+                <div class="document-icon">
+                  PDF
+                </div>
+
+                <div>
+                  <h3>medical-bill.pdf</h3>
+
+                  <p>
+                    PDF • 245 KB
+                  </p>
+                </div>
+
+              </div>
+
+              <div class="document-status">
+                Uploaded
+              </div>
+
+            </div>
+          -->
+
+        </div>
+
+
+        <!-- =========================
+             ANALYSIS RESULTS
+             ========================= -->
 
         <div id="results" class="results hidden">
 
