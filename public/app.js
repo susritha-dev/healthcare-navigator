@@ -27,7 +27,7 @@ uploadForm.addEventListener("submit", async (event) => {
     return;
   }
 
-  statusMessage.textContent = "Reading your document...";
+  statusMessage.textContent = "Analyzing your document...";
   results.classList.add("hidden");
 
   try {
@@ -47,25 +47,47 @@ uploadForm.addEventListener("submit", async (event) => {
       throw new Error(data.error || "Something went wrong.");
     }
 
-    statusMessage.textContent = "PDF text extracted successfully.";
+    statusMessage.textContent = "Document analyzed successfully.";
 
     results.classList.remove("hidden");
 
-    documentType.textContent = "PDF Read Successfully";
+    documentType.textContent = formatDocumentType(
+      data.documentType || "UNKNOWN"
+    );
 
-    providerResult.textContent = "Coming next";
-    dateResult.textContent = "Coming next";
-    serviceResult.textContent = "Coming next";
-    patientResult.textContent = "Coming next";
+    providerResult.textContent =
+      data.provider || "Not found";
+
+    dateResult.textContent =
+      data.date || "Not found";
+
+    serviceResult.textContent =
+      data.service || "Not found";
+
+    patientResult.textContent =
+      data.patientResponsibility || "Not found";
 
     summaryResult.textContent =
-      data.textPreview || "Text was extracted, but no preview was returned.";
+      data.summary || "No summary was generated.";
   } catch (error) {
     console.error(error);
 
     statusMessage.textContent =
-      error.message || "Could not analyze the PDF.";
+      error.message || "Could not analyze the document.";
 
     results.classList.add("hidden");
   }
 });
+
+function formatDocumentType(type) {
+  const labels = {
+    BILL: "Medical Bill",
+    EOB: "Explanation of Benefits",
+    LAB_RESULT: "Lab Result",
+    VISIT_SUMMARY: "Visit Summary",
+    DISCHARGE_SUMMARY: "Discharge Summary",
+    UNKNOWN: "Healthcare Document"
+  };
+
+  return labels[type] || "Healthcare Document";
+}

@@ -1,4 +1,5 @@
 const pdfParse = require("pdf-parse");
+const { analyzeDocument } = require("./documentAnalyzer");
 
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
@@ -32,17 +33,18 @@ module.exports = async function handler(req, res) {
       });
     }
 
+    const analysis = analyzeDocument(text);
+
     return res.status(200).json({
       success: true,
-      message: "PDF text extracted successfully.",
       characterCount: text.length,
-      textPreview: text.slice(0, 1500)
+      ...analysis
     });
   } catch (error) {
-    console.error("PDF analysis error:", error);
+    console.error("Document analysis error:", error);
 
     return res.status(500).json({
-      error: "Something went wrong while reading the PDF."
+      error: "Something went wrong while analyzing the document."
     });
   }
 };
