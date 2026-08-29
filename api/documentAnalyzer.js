@@ -251,25 +251,37 @@ function extractDate(text) {
   return null;
 }
 
-function extractAmount(text, labels) {
+function extractAmountWithSource(text, labels) {
   for (const label of labels) {
+    const escapedLabel = label.replace(
+      /[.*+?^${}()|[\]\\]/g,
+      "\\$&"
+    );
+
     const pattern = new RegExp(
-      `${label}\\s*[:#]?\\s*\\$?\\s*([\\d,]+(?:\\.\\d{2})?)`,
+      `(${escapedLabel}\\s*[:#]?\\s*\\$?\\s*([\\d,]+(?:\\.\\d{2})?))`,
       "i"
     );
 
     const match = text.match(pattern);
 
     if (match) {
-      const amount = match[1];
+      const amount = match[2];
 
-      return amount.includes(".")
-        ? `$${amount}`
-        : `$${amount}.00`;
+      return {
+        value: amount.includes(".")
+          ? `$${amount}`
+          : `$${amount}.00`,
+
+        sourceText: match[1].trim()
+      };
     }
   }
 
-  return null;
+  return {
+    value: null,
+    sourceText: null
+  };
 }
 
 function cleanService(value) {
@@ -332,19 +344,27 @@ function buildSummary(data) {
 
     parts.push(`This appears to be a ${label}.`);
   } else {
-    parts.push("This appears to be a healthcare document.");
+    parts.push(
+      "This appears to be a healthcare document."
+    );
   }
 
   if (data.provider) {
-    parts.push(`The document appears to be from ${data.provider}.`);
+    parts.push(
+      `The document appears to be from ${data.provider}.`
+    );
   }
 
   if (data.date) {
-    parts.push(`The main date found is ${data.date}.`);
+    parts.push(
+      `The main date found is ${data.date}.`
+    );
   }
 
   if (data.service) {
-    parts.push(`The main service appears to be ${data.service}.`);
+    parts.push(
+      `The main service appears to be ${data.service}.`
+    );
   }
 
   if (data.patientResponsibility) {
@@ -370,47 +390,55 @@ function buildSummary(data) {
 function analyzeDocument(text) {
   const cleanedText = normalizeText(text);
 
-  const classification = classifyDocument(cleanedText);
+  const classification =
+    classifyDocument(cleanedText);
 
   const provider = extractProvider(cleanedText);
   const date = extractDate(cleanedText);
   const service = extractService(cleanedText);
 
-  const billedAmount = extractAmount(cleanedText, [
-    "Total Charges",
-    "Billed Amount",
-    "Amount Billed",
-    "Total Billed",
-    "Original Charges"
-  ]);
+  const billedAmountResult =
+    extractAmountWithSource(cleanedText, [
+      "Total Charges",
+      "Billed Amount",
+      "Amount Billed",
+      "Total Billed",
+      "Original Charges"
+    ]);
 
-  const insurancePayment = extractAmount(cleanedText, [
-    "Insurance Payment",
-    "Insurance Paid",
-    "Plan Paid",
-    "Paid by Insurance"
-  ]);
+  const insurancePaymentResult =
+    extractAmountWithSource(cleanedText, [
+      "Insurance Payment",
+      "Insurance Paid",
+      "Plan Paid",
+      "Paid by Insurance"
+    ]);
 
-  const insuranceAdjustment = extractAmount(cleanedText, [
-    "Insurance Adjustment",
-    "Adjustment",
-    "Plan Discount",
-    "Contractual Adjustment"
-  ]);
+  const insuranceAdjustmentResult =
+    extractAmountWithSource(cleanedText, [
+      "Insurance Adjustment",
+      "Adjustment",
+      "Plan Discount",
+      "Contractual Adjustment"
+    ]);
 
-  const patientResponsibility = extractAmount(cleanedText, [
-    "Patient Responsibility",
-    "Amount Due",
-    "Balance Due",
-    "You Owe",
-    "Member Responsibility",
-    "Patient Balance"
-  ]);
+  const patientResponsibilityResult =
+    extractAmountWithSource(cleanedText, [
+      "Patient Responsibility",
+      "Amount Due",
+      "Balance Due",
+      "You Owe",
+      "Member Responsibility",
+      "Patient Balance"
+    ]);
 
   const data = {
-    documentType: classification.documentType,
+    documentType:
+      classification.documentType,
+
     classificationConfidence:
       classification.classificationConfidence,
+
     classificationScore:
       classification.classificationScore,
 
@@ -418,10 +446,31 @@ function analyzeDocument(text) {
     date,
     service,
 
-    billedAmount,
-    insurancePayment,
-    insuranceAdjustment,
-    patientResponsibility
+    billedAmount:
+      billedAmountResult.value,
+
+    insurancePayment:
+      insurancePaymentResult.value,
+
+    insuranceAdjustment:
+      insuranceAdjustmentResult.value,
+
+    patientResponsibility:
+      patientResponsibilityResult.value,
+
+    sources: {
+      billedAmount:
+        billedAmountResult.sourceText,
+
+      insurancePayment:
+        insurancePaymentResult.sourceText,
+
+      insuranceAdjustment:
+        insuranceAdjustmentResult.sourceText,
+
+      patientResponsibility:
+        patientResponsibilityResult.sourceText
+    }
   };
 
   return {
