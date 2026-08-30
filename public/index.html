@@ -230,6 +230,9 @@
               Healthcare Document
             </h2>
 
+            <button id="documentTypeExplain" class="explain-toggle" hidden></button>
+            <div id="documentTypeExplanation" class="explanation-panel" hidden></div>
+
           </div>
 
 
@@ -238,24 +241,72 @@
             <div class="result-card">
               <span>Provider</span>
               <strong id="providerResult">—</strong>
+              <button id="providerExplain" class="explain-toggle" hidden></button>
+              <div id="providerExplanation" class="explanation-panel" hidden></div>
             </div>
 
 
             <div class="result-card">
-              <span>Date</span>
+              <span>Date of Service</span>
               <strong id="dateResult">—</strong>
+              <button id="dateExplain" class="explain-toggle" hidden></button>
+              <div id="dateExplanation" class="explanation-panel" hidden></div>
             </div>
 
 
             <div class="result-card">
               <span>Service</span>
               <strong id="serviceResult">—</strong>
+              <button id="serviceExplain" class="explain-toggle" hidden></button>
+              <div id="serviceExplanation" class="explanation-panel" hidden></div>
             </div>
 
 
             <div class="result-card">
+              <span>Billed Amount</span>
+              <strong id="billedAmountResult">—</strong>
+              <button id="billedAmountExplain" class="explain-toggle" hidden></button>
+              <div id="billedAmountExplanation" class="explanation-panel" hidden></div>
+            </div>
+
+
+            <div class="result-card">
+              <span>Insurance Adjustment</span>
+              <strong id="insuranceAdjustmentResult">—</strong>
+              <button id="insuranceAdjustmentExplain" class="explain-toggle" hidden></button>
+              <div id="insuranceAdjustmentExplanation" class="explanation-panel" hidden></div>
+            </div>
+
+
+            <div class="result-card">
+              <span>Insurance Paid</span>
+              <strong id="insurancePaidResult">—</strong>
+              <button id="insurancePaidExplain" class="explain-toggle" hidden></button>
+              <div id="insurancePaidExplanation" class="explanation-panel" hidden></div>
+            </div>
+
+
+            <div class="result-card result-card-highlight">
               <span>Patient Responsibility</span>
               <strong id="patientResult">—</strong>
+              <button id="patientExplain" class="explain-toggle" hidden></button>
+              <div id="patientExplanation" class="explanation-panel" hidden></div>
+            </div>
+
+          </div>
+
+
+          <div class="line-items-card">
+
+            <h3>Line Items</h3>
+
+            <p class="line-items-hint">
+              Individual charges that make up the total billed amount.
+              Click any item to understand what it is and whether to verify it.
+            </p>
+
+            <div id="lineItems" class="line-items-list">
+              <p class="line-items-empty">Line items will appear here after analysis.</p>
             </div>
 
           </div>
@@ -263,7 +314,7 @@
 
           <div class="summary-card">
 
-            <h3>Plain-Language Summary</h3>
+            <h3>Source Text Preview</h3>
 
             <p id="summaryResult">
               Your document explanation will appear here.
